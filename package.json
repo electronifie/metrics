@@ -1,0 +1,32 @@
+{
+  "name": "metrics",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "should": "^6.0.3",
+    "sinon": "^1.14.1"
+  },
+  "optionalDependencies": {
+    "metrics-instruments": "*"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/electronifie/metrics"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/electronifie/metrics/issues"
+  },
+  "homepage": "https://github.com/electronifie/metrics"
+}

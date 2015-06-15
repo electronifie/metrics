@@ -1,0 +1,11 @@
+{
+  "development": {
+    "INFLUXDB": {
+      "HOST": "localhost",
+      "PORT": 8086,
+      "USER": "admin",
+      "PASS": "admin",
+      "DB": "electronifie"
+    }
+  }
+}

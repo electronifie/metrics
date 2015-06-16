@@ -1,5 +1,5 @@
 var debug = require('debug')('metrics');
-var timer = require('./lib/timer');
+var timers = require('./lib/timers');
 
 var providers = [];
 
@@ -12,10 +12,10 @@ var providers = [];
     influxdb = require('metrics-influxdb');
     debug('loaded metrics-influxdb');
     providers.push(influxdb);
-  } catch (err) { 
+  } catch (err) {
     debug('metrics-influxdb not loaded: %s', err);
   }
-  
+
 })();
 
 function applyToAllProviders (args, method) {
@@ -35,12 +35,14 @@ function applyToAllProviders (args, method) {
 
     args.push(accumilate);
 
-    providers.forEach(function (p) { 
-      p[method].apply(p, args); 
+    providers.forEach(function (p) {
+      p[method].apply(p, args);
     });
 
   } else {
-    providers.forEach(function (p) { p[method].apply(p, args); });
+    providers.forEach(function (p) {
+      p[method].apply(p, args);
+    });
   }
 }
 
@@ -50,10 +52,10 @@ module.exports = {
     applyToAllProviders(args, 'decrementCounter');
   },
   getTimer: function (series, point) {
-    return new timer.Timer(series, point);
+    return new timers.Timer(series, point);
   },
   getMultiTimer: function () {
-    return new timer.MultiTimer();
+    return new timers.MultiTimer();
   },
   incrementCounter: function () {
     var args = Array.prototype.slice.call(arguments, 0);
@@ -65,10 +67,18 @@ module.exports = {
   },
   writeMultiTimer: function () {
     var args = Array.prototype.slice.call(arguments, 0);
+    var timer = args[0];
+    if ( ! timer.finish) {
+      args[0] = new timers.MultiTimer(timer.series, timer.point, timer.start);
+    }
     applyToAllProviders(args, 'writeMultiTimer');
   },
   writeTimer: function () {
     var args = Array.prototype.slice.call(arguments, 0);
+    var timer = args[0];
+    if ( ! timer.finish) {
+      args[0] = new timers.Timer(timer.series, timer.point, timer.start);
+    }
     applyToAllProviders(args, 'writeTimer');
   },
   writePoint: function () {

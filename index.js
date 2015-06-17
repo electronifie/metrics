@@ -3,21 +3,6 @@ var timers = require('./lib/timers');
 
 var providers = [];
 
-(function loadProviders () {
-
-  var influxdb;
-
-  try {
-    debug('attempting to load metrics-influxdb');
-    influxdb = require('metrics-influxdb');
-    debug('loaded metrics-influxdb');
-    providers.push(influxdb);
-  } catch (err) {
-    debug('metrics-influxdb not loaded: %s', err);
-  }
-
-})();
-
 function applyToAllProviders (args, method) {
 
   if (typeof args[args.length - 1] === 'function') {
@@ -90,3 +75,18 @@ module.exports = {
     applyToAllProviders(args, 'writePoints');
   },
 };
+
+(function loadProviders () {
+
+  var influxdb;
+
+  try {
+    debug('attempting to load metrics-influxdb');
+    module.exports.influx = influxdb = require('metrics-influxdb');
+    debug('loaded metrics-influxdb');
+    providers.push(influxdb);
+  } catch (err) {
+    debug('metrics-influxdb not loaded: %s', err);
+  }
+
+})();

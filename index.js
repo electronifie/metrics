@@ -57,8 +57,6 @@ Metrics.prototype.only = function (providers) {
     throw new Error('only() accepts an array of metrics provider string names, like [\'influx\',\'reporting\']')
   }
 
-console.log(providers instanceof Array)
-
   var list = [];
   var self = this;
 

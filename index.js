@@ -1,9 +1,11 @@
 var debug = require('debug')('metrics');
 var timers = require('./lib/timers');
 
-var providers = [];
+function Metrics (providers) {
+  this.providers = providers || [];
+}
 
-function applyToAllProviders (args, method) {
+Metrics.prototype.applyToProviders = function applyToProviders (args, method) {
 
   if (typeof args[args.length - 1] === 'function') {
 
@@ -12,7 +14,7 @@ function applyToAllProviders (args, method) {
 
     function accumilate () {
       results.push(arguments[0]);
-      if (results.length === providers.length) {
+      if (results.length === this.providers.length) {
         results = results.filter(function (r) { return r !== undefined && r !== null; });
         cb(results.length ? results : undefined);
       }
@@ -20,73 +22,114 @@ function applyToAllProviders (args, method) {
 
     args.push(accumilate);
 
-    providers.forEach(function (p) {
-      p[method].apply(p, args);
+    this.providers.forEach(function (p) {
+      if (p[method]) p[method].apply(p, args);
     });
 
   } else {
-    providers.forEach(function (p) {
-      p[method].apply(p, args);
+    this.providers.forEach(function (p) {
+      if (p[method]) p[method].apply(p, args);
     });
   }
-}
-
-module.exports = {
-  decrementCounter: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    applyToAllProviders(args, 'decrementCounter');
-  },
-  getTimer: function (series, point) {
-    return new timers.Timer(series, point);
-  },
-  getMultiTimer: function () {
-    return new timers.MultiTimer();
-  },
-  incrementCounter: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    applyToAllProviders(args, 'incrementCounter');
-  },
-  writeGauge: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    applyToAllProviders(args, 'writeGauge');
-  },
-  writeMultiTimer: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    var timer = args[0];
-    if ( ! timer.finish) {
-      args[0] = new timers.MultiTimer(timer.series, timer.point, timer.start);
-    }
-    applyToAllProviders(args, 'writeMultiTimer');
-  },
-  writeTimer: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    var timer = args[0];
-    if ( ! timer.finish) {
-      args[0] = new timers.Timer(timer.series, timer.point, timer.start);
-    }
-    applyToAllProviders(args, 'writeTimer');
-  },
-  writePoint: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    applyToAllProviders(args, 'writePoint');
-  },
-  writePoints: function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-    applyToAllProviders(args, 'writePoints');
-  },
 };
+
+Metrics.prototype.decrementCounter = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  this.applyToProviders(args, 'decrementCounter');
+};
+
+Metrics.prototype.getTimer = function (series, point) {
+  return new timers.Timer(series, point);
+};
+
+Metrics.prototype.getMultiTimer = function () {
+  return new timers.MultiTimer();
+};
+
+Metrics.prototype.incrementCounter = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  this.applyToProviders(args, 'incrementCounter');
+};
+
+Metrics.prototype.only = function (providers) {
+
+  if (! providers instanceof Array) {
+    throw new Error('only() accepts an array of metrics provider string names, like [\'influx\',\'reporting\']')
+  }
+
+console.log(providers instanceof Array)
+
+  var list = [];
+  var self = this;
+
+  providers.forEach(function (p) {
+    if (self[p] !== undefined) {
+      list.push(self[p]);
+    }
+  });
+
+  return new Metrics(list);
+};
+
+Metrics.prototype.writeGauge = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  this.applyToProviders(args, 'writeGauge');
+};
+
+Metrics.prototype.writeMultiTimer = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  var timer = args[0];
+  if ( ! timer.finish) {
+    args[0] = new timers.MultiTimer(timer.series, timer.point, timer.start);
+  }
+  this.applyToProviders(args, 'writeMultiTimer');
+};
+
+Metrics.prototype.writeTimer = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  var timer = args[0];
+  if ( ! timer.finish) {
+    args[0] = new timers.Timer(timer.series, timer.point, timer.start);
+  }
+  this.applyToProviders(args, 'writeTimer');
+};
+
+Metrics.prototype.writePoint = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  this.applyToProviders(args, 'writePoint');
+};
+
+Metrics.prototype.writePoints = function () {
+  var args = Array.prototype.slice.call(arguments, 0);
+  this.applyToProviders(args, 'writePoints');
+};
+
+var defaultInstance = new Metrics();
+
+module.exports = defaultInstance;
 
 (function loadProviders () {
 
-  var influxdb;
+  var influx;
 
   try {
     debug('attempting to load metrics-influxdb');
-    module.exports.influx = influxdb = require('metrics-influxdb');
+    defaultInstance.influx = influx = require('metrics-influxdb');
     debug('loaded metrics-influxdb');
-    providers.push(influxdb);
+    defaultInstance.providers.push(influx);
   } catch (err) {
     debug('metrics-influxdb not loaded: %s', err);
+  }
+
+  var reporting;
+
+  try {
+    debug('attempting to load metrics-reporting');
+    defaultInstance.reporting = reporting = require('metrics-reporting');
+    debug('loaded metrics-reporting');
+    defaultInstance.providers.push(reporting);
+  } catch (err) {
+    debug('metrics-reporting not loaded: %s', err);
   }
 
 })();

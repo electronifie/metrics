@@ -1,5 +1,6 @@
 {
   "development": {
+    "RABBITMQ_URL": "amqp://localhost:5672",
     "INFLUXDB": {
       "HOST": "localhost",
       "PORT": 8086,
